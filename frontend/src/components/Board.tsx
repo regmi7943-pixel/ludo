@@ -342,6 +342,7 @@ export const Board: React.FC = () => {
                                 return (
                                     <motion.button
                                         key={`${color}-${t.id}`}
+                                        layout
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         exit={{ scale: 0 }}
