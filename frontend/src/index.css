@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle, #00000010 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+body {
+  background-color: #f1f5f9;
+  font-family: 'Inter', system-ui, sans-serif;
+}
