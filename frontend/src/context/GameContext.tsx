@@ -29,7 +29,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // const [userId, setUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        const newSocket = io(SOCKET_URL);
+        const newSocket = io(SOCKET_URL, {
+            transports: ['websocket'],
+            upgrade: false
+        });
         setSocket(newSocket);
 
         newSocket.on('connect', () => {

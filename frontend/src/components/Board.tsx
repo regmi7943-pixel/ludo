@@ -50,6 +50,16 @@ const SAFE_SPOTS = [
     // Let's stick to start squares + maybe others. For MVP visual, we'll mark starts.
 ];
 
+// Memoized static grid to prevent re-renders
+const StaticGrid = React.memo(() => (
+    <>
+        {[...Array(225)].map((_, i) => (
+            <div key={`cell-${i}`} className="border border-slate-300 w-full h-full" />
+        ))}
+    </>
+));
+StaticGrid.displayName = 'StaticGrid';
+
 export const Board: React.FC = () => {
     const { gameState, rollDice, makeMove, userId, startGame } = useGame();
 
@@ -215,10 +225,8 @@ export const Board: React.FC = () => {
             <div className="bg-white p-1 rounded-lg shadow-2xl relative">
                 <div className="grid w-[min(90vw,600px)] aspect-square bg-slate-100 border-4 border-slate-800 relative" style={{ gridTemplateColumns: 'repeat(15, 1fr)', gridTemplateRows: 'repeat(15, 1fr)' }}>
 
-                    {/* BACKGROUND GRID CELLS */}
-                    {[...Array(225)].map((_, i) => (
-                        <div key={`cell-${i}`} className="border border-slate-300 w-full h-full" />
-                    ))}
+                    {/* BACKGROUND GRID CELLS (Memoized) */}
+                    <StaticGrid />
 
                     {/* BASES */}
                     <div className="col-start-1 col-end-7 row-start-1 row-end-7 bg-red-100 border-2 border-slate-800 p-4 relative">
@@ -287,7 +295,6 @@ export const Board: React.FC = () => {
                                 return (
                                     <motion.button
                                         key={`${color}-${t.id}`}
-                                        layout
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
                                         exit={{ scale: 0 }}
