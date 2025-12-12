@@ -18,7 +18,8 @@ interface GameContextType {
 const GameContext = createContext<GameContextType>({} as GameContextType);
 
 // Change this if your backend runs on a different port/host
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+// Change this if your backend runs on a different port/host
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'https://ludo-production-33b0.up.railway.app';
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [socket, setSocket] = useState<Socket | null>(null);
