@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { PlayerColor, Token } from '../types';
 import { clsx } from 'clsx';
 import { useSounds } from '../hooks/useSounds';
+import { Dice } from './Dice';
+import { useState } from 'react';
 
 // --- COORDINATE CONSTANTS ---
 // 15x15 Grid. 1-based indexing for CSS Grid.
@@ -119,8 +121,17 @@ export const Board: React.FC = () => {
         return gameState.players[gameState.currentPlayerIndex]?.id === userId;
     }, [gameState, userId]);
 
+    // Dice Rolling State
+    const [isRolling, setIsRolling] = useState(false);
+    useEffect(() => {
+        if (gameState?.diceValue) {
+            setIsRolling(false);
+        }
+    }, [gameState?.diceValue]);
+
     // Sound-wrapped actions
     const handleRollDice = () => {
+        setIsRolling(true);
         sounds.playDiceRoll();
         rollDice(gameState!.code);
     };
@@ -297,12 +308,21 @@ export const Board: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* CENTER TRIANGLE */}
-                    <div className="col-start-7 col-end-10 row-start-7 row-end-10 bg-slate-800 relative overflow-hidden">
+                    {/* CENTER TRIANGLE & DICE */}
+                    <div className="col-start-7 col-end-10 row-start-7 row-end-10 bg-slate-800 relative overflow-hidden flex items-center justify-center">
                         <div className="absolute inset-0 bg-red-500" style={{ clipPath: 'polygon(0 0, 0 100%, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-green-500" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-yellow-500" style={{ clipPath: 'polygon(100% 0, 100% 100%, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-blue-500" style={{ clipPath: 'polygon(0 100%, 100% 100%, 50% 50%)' }} />
+
+                        <div className="z-20 relative">
+                            <Dice
+                                value={gameState.diceValue}
+                                rolling={isRolling}
+                                onClick={handleRollDice}
+                                disabled={!isMyTurn || gameState.waitingForMove}
+                            />
+                        </div>
                     </div>
 
                     {/* PATH CELLS - Drawn as borders */}
@@ -372,14 +392,9 @@ export const Board: React.FC = () => {
                 {gameState.status === 'in_progress' && (
                     <>
                         {isMyTurn && !gameState.waitingForMove && (
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={handleRollDice}
-                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl text-white font-black text-xl shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
-                            >
-                                ROLL DICE 🎲
-                            </motion.button>
+                            <div className="text-white font-bold animate-bounce mt-2 text-center">
+                                Tap Center Dice to Roll! 🎲
+                            </div>
                         )}
                         {!isMyTurn && (
                             <div className="text-slate-500 font-medium animate-pulse">
