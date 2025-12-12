@@ -11,8 +11,9 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow all for now, lock down later
-        methods: ["GET", "POST"]
+        origin: ["https://ludo-two-henna.vercel.app", "http://localhost:5173"],
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
