@@ -33,7 +33,7 @@ export const Dice: React.FC<DiceProps> = ({ value, rolling, onClick, disabled })
                 3: { x: 0, y: -90 },
                 4: { x: 0, y: 90 },
                 5: { x: 90, y: 0 },
-                6: { x: 180, y: 0 }
+                6: { x: 0, y: 180 }
             };
 
             const target = rotations[displayValue] || { x: 0, y: 0 };

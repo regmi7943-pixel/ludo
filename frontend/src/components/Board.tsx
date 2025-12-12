@@ -309,7 +309,7 @@ export const Board: React.FC = () => {
                     </div>
 
                     {/* CENTER TRIANGLE & DICE */}
-                    <div className="col-start-7 col-end-10 row-start-7 row-end-10 bg-slate-800 relative overflow-hidden flex items-center justify-center">
+                    <div className="col-start-7 col-end-10 row-start-7 row-end-10 bg-slate-800 relative flex items-center justify-center">
                         <div className="absolute inset-0 bg-red-500" style={{ clipPath: 'polygon(0 0, 0 100%, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-green-500" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-yellow-500" style={{ clipPath: 'polygon(100% 0, 100% 100%, 50% 50%)' }} />
