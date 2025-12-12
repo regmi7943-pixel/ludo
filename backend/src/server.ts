@@ -1,10 +1,16 @@
+console.log("Starting Server...");
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { setupSocket } from './socket';
 
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
 const app = express();
+console.log("Express initialized");
 app.use(cors());
 app.use(express.json());
 
