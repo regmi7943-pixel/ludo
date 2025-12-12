@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { PlayerColor } from '../types';
+import type { PlayerColor, Token } from '../types';
 import { clsx } from 'clsx';
+import { useSounds } from '../hooks/useSounds';
 
 // --- COORDINATE CONSTANTS ---
 // 15x15 Grid. 1-based indexing for CSS Grid.
@@ -62,12 +63,47 @@ StaticGrid.displayName = 'StaticGrid';
 
 export const Board: React.FC = () => {
     const { gameState, rollDice, makeMove, userId, startGame } = useGame();
+    const sounds = useSounds();
+
+    // Track previous token state for capture detection
+    const prevTokensRef = useRef<Record<PlayerColor, Token[]> | null>(null);
 
     // Memoize player lookup
     const myPlayer = useMemo(() =>
         gameState?.players.find(p => p.id === userId),
         [gameState, userId]
     );
+
+    // Detect captures and play sound
+    useEffect(() => {
+        if (!gameState || !prevTokensRef.current) {
+            prevTokensRef.current = gameState?.tokens || null;
+            return;
+        }
+
+        const prevTokens = prevTokensRef.current;
+        const colors: PlayerColor[] = ['red', 'green', 'blue', 'yellow'];
+
+        // Check if any token went from active (position >= 0) to home (position = -1)
+        for (const color of colors) {
+            const prev = prevTokens[color];
+            const curr = gameState.tokens[color];
+
+            for (let i = 0; i < 4; i++) {
+                if (prev[i].position >= 0 && curr[i].position === -1) {
+                    // Token was captured!
+                    sounds.playCapture();
+                    break;
+                }
+                // Check for token finishing
+                if (prev[i].position !== 57 && curr[i].position === 57) {
+                    sounds.playWin();
+                }
+            }
+        }
+
+        prevTokensRef.current = gameState.tokens;
+    }, [gameState, sounds]);
 
     // Copy Logic
     const [copied, setCopied] = React.useState(false);
@@ -82,6 +118,17 @@ export const Board: React.FC = () => {
         if (!gameState) return false;
         return gameState.players[gameState.currentPlayerIndex]?.id === userId;
     }, [gameState, userId]);
+
+    // Sound-wrapped actions
+    const handleRollDice = () => {
+        sounds.playDiceRoll();
+        rollDice(gameState!.code);
+    };
+
+    const handleMakeMove = (tokenIndex: number) => {
+        sounds.playMove();
+        makeMove(gameState!.code, tokenIndex);
+    };
 
     if (!gameState) return null;
 
@@ -308,7 +355,7 @@ export const Board: React.FC = () => {
                                             color === 'blue' && "bg-blue-600",
                                             isClickable ? "cursor-pointer hover:scale-125 ring-2 ring-white animate-bounce" : "cursor-default"
                                         )}
-                                        onClick={() => isClickable && makeMove(gameState.code, t.id)}
+                                        onClick={() => isClickable && handleMakeMove(t.id)}
                                     >
                                         <div className="absolute inset-0 rounded-full bg-white opacity-20 transform scale-50 -translate-y-1/4" />
                                     </motion.button>
@@ -327,7 +374,7 @@ export const Board: React.FC = () => {
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => rollDice(gameState.code)}
+                                onClick={handleRollDice}
                                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl text-white font-black text-xl shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1"
                             >
                                 ROLL DICE 🎲
