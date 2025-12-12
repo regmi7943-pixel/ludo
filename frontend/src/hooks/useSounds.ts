@@ -10,6 +10,10 @@ export function useSounds() {
         if (!audioContextRef.current) {
             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         }
+        // Unlock audio on mobile (resumes if suspended)
+        if (audioContextRef.current.state === 'suspended') {
+            audioContextRef.current.resume().catch(console.error);
+        }
         return audioContextRef.current;
     }, []);
 
