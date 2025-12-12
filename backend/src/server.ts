@@ -36,6 +36,11 @@ app.get('/health', (req, res) => {
     res.send('Ludo Server is running');
 });
 
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Root route for easy checking
+app.get('/', (req, res) => {
+    res.send('Ludo Backend is Live!');
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT} (0.0.0.0)`);
 });
