@@ -19,7 +19,7 @@ const io = new Server(server, {
 // Setup Socket.IO handlers
 setupSocket(io);
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.get('/health', (req, res) => {
     res.send('Ludo Server is running');
