@@ -27,6 +27,24 @@ export interface GameState {
 
 export const PATH_LENGTH = 52;
 
+// Safe spots where tokens cannot be captured (relative positions)
+// Includes: Start squares (position 0 for each color) and star squares
+const SAFE_SPOTS = [0, 8, 13, 21, 26, 34, 39, 47];
+
+// Start offsets for each color (where they enter the main path in absolute terms)
+const START_OFFSETS: Record<PlayerColor, number> = {
+    red: 0,
+    green: 13,
+    yellow: 26,
+    blue: 39
+};
+
+// Convert player's relative position to absolute board position (0-51)
+function toAbsolutePosition(color: PlayerColor, relativePos: number): number {
+    if (relativePos < 0 || relativePos >= 52) return -1; // Home or home stretch
+    return (relativePos + START_OFFSETS[color]) % 52;
+}
+
 export function initializeBoard(): Record<PlayerColor, Token[]> {
     const colors: PlayerColor[] = ['red', 'green', 'blue', 'yellow'];
     const tokens: any = {};
@@ -51,10 +69,9 @@ export function rollDice(): number {
 
 /**
  * Check if a move is valid.
- * This is a simplified Ludo logic:
+ * Rules:
  * - Must roll 6 to exit home.
- * - Cannot move beyond finish.
- * - Capturing logic will be in applyMove.
+ * - Cannot overshoot finish (exact roll required for position 57).
  */
 export function isValidMove(
     gameState: GameState,
@@ -76,17 +93,12 @@ export function isValidMove(
         return steps === 6;
     }
 
-    // Rule: Cannot overshoot destination (57 is calculated finish index relative to start)
-    // Actual path logic is complex due to relative offsets.
-    // We'll simplify: 
-    // Main path: 0-51 (52 squares)
-    // Home stretch: 52-57 (6 squares)
-    // Total distance from start = 57.
+    const newPosition = token.position + steps;
 
-    // Current implementation assumes 'position' is relative to player's start.
-    // 0 is the start square for that color.
+    // Rule: Cannot overshoot finish (must land exactly on 57)
+    if (newPosition > 57) return false;
 
-    return (token.position + steps) <= 57;
+    return true;
 }
 
 export function canPlayerMove(gameState: GameState, playerId: string, diceValue: number): boolean {
@@ -102,8 +114,6 @@ export function applyMove(
     tokenIndex: number,
     steps: number
 ): GameState {
-    // Clone state to avoid mutation (or mutate if carefully managed, but cloning is safer for sync)
-    // For MVP we mutate for speed, assuming single-threaded Node.js event loop logic.
     const player = gameState.players.find(p => p.id === playerId);
     if (!player) return gameState;
 
@@ -123,8 +133,34 @@ export function applyMove(
         token.status = 'finished';
     }
 
-    // TODO: Implement Captures (Collision with other players)
-    // This requires converting relative position to absolute board position.
+    // CAPTURE LOGIC: Check if landing on opponent's token
+    // Only applies when on main path (position 0-51), not in home stretch (52-56) or finish (57)
+    if (token.position >= 0 && token.position < 52) {
+        const absolutePos = toAbsolutePosition(player.color, token.position);
+        const isSafeSpot = SAFE_SPOTS.includes(token.position);
+
+        if (!isSafeSpot) {
+            // Check all other players' tokens
+            const colors: PlayerColor[] = ['red', 'green', 'blue', 'yellow'];
+            for (const otherColor of colors) {
+                if (otherColor === player.color) continue;
+
+                const otherTokens = gameState.tokens[otherColor];
+                for (const otherToken of otherTokens) {
+                    // Only check tokens on main path
+                    if (otherToken.position >= 0 && otherToken.position < 52) {
+                        const otherAbsolutePos = toAbsolutePosition(otherColor, otherToken.position);
+                        if (otherAbsolutePos === absolutePos) {
+                            // CAPTURE! Send opponent token back to home
+                            console.log(`CAPTURE! ${player.color} captured ${otherColor}'s token at position ${absolutePos}`);
+                            otherToken.position = -1;
+                            otherToken.status = 'home';
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // Check turn change
     // Rule: rolling 6 gives another turn.
@@ -137,3 +173,4 @@ export function applyMove(
 
     return gameState;
 }
+
