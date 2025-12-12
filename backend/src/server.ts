@@ -11,7 +11,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: ["https://ludo-two-henna.vercel.app", "http://localhost:5173"],
+        origin: ["https://ludo-two-henna.vercel.app", "http://localhost:5173", "https://ludo-g3icmh1qo-regmi7943-pixels-projects.vercel.app"],
         methods: ["GET", "POST"],
         credentials: true
     }
