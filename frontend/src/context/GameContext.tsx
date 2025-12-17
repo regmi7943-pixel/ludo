@@ -6,13 +6,13 @@ interface GameContextType {
     socket: Socket | null;
     gameState: GameState | null;
     isConnected: boolean;
+    error: string | null;
     createGame: (name: string) => void;
     joinGame: (code: string, name: string) => void;
     startGame: (code: string) => void;
     rollDice: (code: string) => void;
     makeMove: (code: string, tokenIndex: number) => void;
-    userId: string | null;
-    error: string | null;
+    userId: string;
 }
 
 const GameContext = createContext<GameContextType>({} as GameContextType);
@@ -100,7 +100,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             startGame,
             rollDice,
             makeMove,
-            userId: socket?.id || null,
+            userId: socket?.id || '',
             error
         }}>
             {children}

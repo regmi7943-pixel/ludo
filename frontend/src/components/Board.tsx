@@ -63,12 +63,37 @@ const StaticGrid = React.memo(() => (
 ));
 StaticGrid.displayName = 'StaticGrid';
 
+import { getValidMoves } from '../utils/gameRules';
+
 export const Board: React.FC = () => {
-    const { gameState, rollDice, makeMove, userId, startGame } = useGame();
+    const { gameState, rollDice, makeMove, userId, startGame, socket } = useGame();
     const sounds = useSounds();
 
     // Track previous token state for capture detection
     const prevTokensRef = useRef<Record<PlayerColor, Token[]> | null>(null);
+
+    // Emote State
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [activeEmotes, setActiveEmotes] = useState<{ id: number, emoji: string, playerId: string }[]>([]);
+
+    // Socket Emote Listener
+    useEffect(() => {
+        if (!socket) return;
+        const handleEmote = (data: { emoji: string, playerId: string }) => {
+            const id = Date.now() + Math.random();
+            setActiveEmotes(prev => [...prev, { ...data, id }]);
+            setTimeout(() => setActiveEmotes(prev => prev.filter(e => e.id !== id)), 3000);
+        };
+        socket.on('emote', handleEmote);
+        return () => { socket.off('emote', handleEmote); };
+    }, [socket]);
+
+    // Send Emote
+    const sendEmote = (emoji: string) => {
+        if (!gameState) return;
+        socket?.emit('emote', { code: gameState.code, emoji });
+        setShowEmojiPicker(false);
+    };
 
     // Memoize player lookup
     const myPlayer = useMemo(() =>
@@ -128,6 +153,19 @@ export const Board: React.FC = () => {
             setIsRolling(false);
         }
     }, [gameState?.diceValue]);
+
+    // Auto-Move Logic
+    useEffect(() => {
+        if (isMyTurn && gameState?.diceValue && gameState.waitingForMove && !isRolling) {
+            const validMoves = getValidMoves(gameState, userId, gameState.diceValue);
+            if (validMoves.length === 1) {
+                const timer = setTimeout(() => {
+                    handleMakeMove(validMoves[0]);
+                }, 1000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [gameState?.diceValue, isMyTurn, gameState?.waitingForMove, isRolling, userId]);
 
     // Sound-wrapped actions
     const handleRollDice = () => {
@@ -254,18 +292,36 @@ export const Board: React.FC = () => {
             {/* Header / HUD */}
             <div className="w-full max-w-2xl mb-6 flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-xl">
                 <div className="flex -space-x-3">
-                    {gameState.players.map(p => (
-                        <div key={p.id} className={clsx(
-                            "w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-lg",
-                            p.color === 'red' && "bg-red-500 border-red-300",
-                            p.color === 'green' && "bg-green-500 border-green-300",
-                            p.color === 'yellow' && "bg-yellow-500 border-yellow-300",
-                            p.color === 'blue' && "bg-blue-500 border-blue-300",
-                            gameState.players[gameState.currentPlayerIndex].id === p.id && "ring-4 ring-white z-10 scale-110"
-                        )}>
-                            {p.name[0]}
-                        </div>
-                    ))}
+                    {gameState.players.map(p => {
+                        const emote = activeEmotes.filter(e => e.playerId === p.id).pop();
+                        return (
+                            <div key={p.id} className="relative group">
+                                <div className={clsx(
+                                    "w-10 h-10 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white shadow-lg relative z-10 transition-transform",
+                                    p.color === 'red' && "bg-red-500 border-red-300",
+                                    p.color === 'green' && "bg-green-500 border-green-300",
+                                    p.color === 'yellow' && "bg-yellow-500 border-yellow-300",
+                                    p.color === 'blue' && "bg-blue-500 border-blue-300",
+                                    gameState.players[gameState.currentPlayerIndex].id === p.id && "ring-4 ring-white scale-110 z-20"
+                                )}>
+                                    {p.name[0]}
+                                </div>
+                                <AnimatePresence mode='wait'>
+                                    {emote && (
+                                        <motion.div
+                                            key={emote.id}
+                                            initial={{ scale: 0, opacity: 0, y: 10 }}
+                                            animate={{ scale: 1, opacity: 1, y: -40 }}
+                                            exit={{ scale: 0, opacity: 0 }}
+                                            className="absolute left-1/2 -translate-x-1/2 text-4xl z-50 drop-shadow-lg pointer-events-none whitespace-nowrap"
+                                        >
+                                            {emote.emoji}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="text-white font-mono font-bold text-lg">
@@ -315,7 +371,7 @@ export const Board: React.FC = () => {
                         <div className="absolute inset-0 bg-yellow-500" style={{ clipPath: 'polygon(100% 0, 100% 100%, 50% 50%)' }} />
                         <div className="absolute inset-0 bg-blue-500" style={{ clipPath: 'polygon(0 100%, 100% 100%, 50% 50%)' }} />
 
-                        <div className="z-20 relative">
+                        <div className="z-30 relative">
                             <Dice
                                 value={gameState.diceValue}
                                 rolling={isRolling}
@@ -404,6 +460,38 @@ export const Board: React.FC = () => {
                     </>
                 )}
             </div>
+            {/* EMOJI PICKER */}
+            {gameState.status === 'in_progress' && (
+                <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+                    <AnimatePresence>
+                        {showEmojiPicker && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                                className="bg-white p-3 rounded-2xl shadow-2xl border border-slate-200 grid grid-cols-2 gap-2 mb-2 origin-bottom-right"
+                            >
+                                {['😀', '😂', '😎', '😭', '😡', '🎉', '🎲', '👻'].map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => sendEmote(emoji)}
+                                        className="text-2xl p-2 hover:bg-slate-100 rounded-xl transition-colors active:scale-90"
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <button
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="w-14 h-14 bg-white rounded-full shadow-xl border-4 border-slate-200 text-3xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all text-slate-700"
+                    >
+                        😀
+                    </button>
+                </div>
+            )}
+
             {/* WINNER OVERLAY */}
             {gameState.status === 'finished' && gameState.winner && (
                 <div className="absolute inset-0 bg-slate-900/95 z-50 flex items-center justify-center backdrop-blur-md">

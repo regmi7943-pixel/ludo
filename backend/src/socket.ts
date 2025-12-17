@@ -120,6 +120,11 @@ export function setupSocket(io: Server) {
             }
         });
 
+        socket.on('emote', ({ code, emoji }: { code: string, emoji: string }) => {
+            // Broadcast emote to room
+            io.to(code).emit('emote', { emoji, playerId: socket.id });
+        });
+
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
             // Handle player leaving logic if needed
