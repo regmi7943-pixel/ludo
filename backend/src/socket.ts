@@ -70,16 +70,9 @@ export function setupSocket(io: Server) {
                         console.log('Switching turn...');
                         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
                     } else {
-                        console.log('Rolled 6 but cannot move? Staying on same player (corner case if all pieces blocked?)');
-                        // Actually if rolled 6 and canMove is false, it means all pieces are strictly blocked (e.g. 6 away from finish is occupied?) 
-                        // Or all pieces are finished.
-                        // Standard ludo: 6 gives another turn. If you can't move, you usually forfeit the move but might get the roll again? 
-                        // Simplified: if you can't move, next player.
-                        // But let's stick to "6 gives another turn" rule? 
-                        // If I roll 6 and have no moves, do I roll again? 
-                        // If I have no valid moves with 6, I probably shouldn't hold the turn indefinitely.
-                        // Let's pass turn to be safe and avoid infinite loops for now.
-                        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+                        console.log('Rolled 6 but cannot move. Granting another roll (Standard Ludo Rule).');
+                        // Do not switch turn. Player stays same.
+                        // They will be able to roll again because diceValue is nullified below.
                     }
                     // Reset turn state
                     game.diceValue = null;
