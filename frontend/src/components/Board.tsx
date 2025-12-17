@@ -404,6 +404,31 @@ export const Board: React.FC = () => {
                     </>
                 )}
             </div>
+            {/* WINNER OVERLAY */}
+            {gameState.status === 'finished' && gameState.winner && (
+                <div className="absolute inset-0 bg-slate-900/95 z-50 flex items-center justify-center backdrop-blur-md">
+                    <div className="text-center animate-in zoom-in duration-500">
+                        <div className="text-8xl mb-6 animate-bounce">🏆</div>
+                        <h2 className={clsx(
+                            "text-6xl font-black mb-4 uppercase tracking-widest drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]",
+                            gameState.winner === 'red' && "text-red-500",
+                            gameState.winner === 'green' && "text-green-500",
+                            gameState.winner === 'yellow' && "text-yellow-500",
+                            gameState.winner === 'blue' && "text-blue-500"
+                        )}>
+                            {gameState.players.find(p => p.color === gameState.winner)?.name} WINS!
+                        </h2>
+                        <p className="text-slate-400 text-2xl font-bold mb-10">The game has ended.</p>
+
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-10 py-5 bg-white text-slate-900 rounded-full font-black text-2xl hover:scale-105 active:scale-95 transition-all shadow-xl ring-4 ring-slate-900"
+                        >
+                            PLAY AGAIN 🔄
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

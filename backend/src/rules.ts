@@ -133,6 +133,15 @@ export function applyMove(
         token.status = 'finished';
     }
 
+    // Check if player won (all 4 tokens finished)
+    if (tokens.every(t => t.status === 'finished')) {
+        gameState.winner = player.color;
+        gameState.status = 'finished';
+        gameState.waitingForMove = false;
+        gameState.diceValue = null;
+        return gameState;
+    }
+
     // CAPTURE LOGIC: Check if landing on opponent's token
     // Only applies when on main path (position 0-51), not in home stretch (52-56) or finish (57)
     if (token.position >= 0 && token.position < 52) {
